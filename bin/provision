@@ -1,0 +1,45 @@
+#!/bin/bash
+set -euxo pipefail
+cd $(cd `dirname "$0"`; cd ..; pwd)
+
+# Install Java
+yum install -y java-1.8.0-openjdk
+
+# Install Hadoop
+# http://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/SingleCluster.html
+pushd /opt/
+if [ ! -d hadoop-2.7.1 ]; then
+	curl -SLo hadoop-2.7.1.tar.gz http://apache.arvixe.com/hive/hadoop/common/hadoop-2.7.1/hadoop-2.7.1.tar.gz
+	tar -xf hadoop-2.7.1.tar.gz
+fi
+popd
+
+# Install Hive
+# https://cwiki.apache.org/confluence/display/Hive/GettingStarted
+pushd /opt/
+if [ ! -d apache-hive-1.2.1-bin ]; then
+	curl -SLo apache-hive-1.2.1-bin.tar.gz http://apache.arvixe.com/hive/stable/apache-hive-1.2.1-bin.tar.gz
+	tar -xf apache-hive-1.2.1-bin.tar.gz
+fi
+popd
+
+# Install Kite
+# http://kitesdk.org/docs/1.1.0/Install-Kite.html
+pushd /usr/local/bin/
+if [ ! -f kite-dataset ]; then
+	curl -SLo kite-dataset http://central.maven.org/maven2/org/kitesdk/kite-tools/1.1.0/kite-tools-1.1.0-binary.jar
+	chmod +x kite-dataset
+fi
+popd
+
+# Set up environment
+cat <<"EOF" > /etc/profile.d/adammck.sh
+export JAVA_HOME=/usr/lib/jvm/jre-1.8.0-openjdk
+export HADOOP_HOME=/opt/hadoop-2.7.1
+export HIVE_HOME=/opt/apache-hive-1.2.1-bin
+export PATH=$HIVE_HOME/bin:$PATH
+
+# When this var is not set, Kite raises:
+#   Exception in thread "main" java.lang.NoClassDefFoundError: org/apache/hadoop/mapreduce/TaskAttemptContext
+export HADOOP_MAPRED_HOME=$HADOOP_HOME
+EOF
